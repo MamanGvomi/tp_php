@@ -27,12 +27,12 @@ int main(int argc, char **argv) {
 
 
     // Petit test pour vérifier qu'on peut avoir plusieurs threads par processus.
-#pragma omp parallel num_threads(4)
-    {
-      int id = omp_get_thread_num();
-#pragma omp critical
-      cout << "je suis le thread " << id << " pour pid=" << pid << endl;
-    }
+    #pragma omp parallel num_threads(4)
+        {
+        int id = omp_get_thread_num();
+    #pragma omp critical
+        cout << "je suis le thread " << id << " pour pid=" << pid << endl;
+        }
 
 
     // Pour mesurer le temps (géré par le processus root)
@@ -71,33 +71,53 @@ int main(int argc, char **argv) {
         }
     }
     MPI_Bcast(matrice, n*n, MPI_INT, root, MPI_COMM_WORLD); // envoie de la matrice aux autres thread
+
+    //Variables pour les scatter des vecteurs
     int* sendcounts = new int[nprocs];
     int* displ = new int[nprocs];
+    int nb_vecteurs_par_threads = m / nprocs;
+    int restes = m % nprocs;
+    int* tab_thread_vecteur = new int[nprocs];
+    for (size_t i = 0; i < nprocs; i++)
+    {
+        tab_thread_vecteur[i] = (i < restes) ? nb_vecteurs_par_threads + 1 : nb_vecteurs_par_threads;
+    }
+    int taille_rec = tab_thread_vecteur[pid] * n;
+    int* recvecteur = new int[taille_rec];
+
     if (pid == root){
         debut = chrono::system_clock::now();
-        int reste = m % nprocs;
         for(int i = 0; i < nprocs; i++){
-            if(i < reste){
-                sendcounts[i] = (m / nprocs + 1) * n;
-            }else{
-                sendcounts[i] = (m / nprocs) * n;
-            }
+            sendcounts[i] = tab_thread_vecteur[i] * n;
         }
-
         int init_displ = 0;
         for(int i = 0; i < nprocs; i ++){
             displ[i] = init_displ;
             init_displ += sendcounts[i];
         }
     }
-    int taille = (pid < m%nprocs) ? (m/nprocs * n) + 1: (m/nprocs * n);
-    int* recvecteur = new int[taille];
-    MPI_Scatterv(vecteurs, sendcounts, displ, MPI_INT, recvecteur, taille, MPI_INT, root, MPI_COMM_WORLD);
+    f << "Le sendcounts : " << endl;
+    for (size_t i = 0; i < nprocs; i++)
+    {
+        f << "pid " << i << " : " << sendcounts[i] << endl;
+    }
+    f << "Le displ : " << endl;
+    for (size_t i = 0; i < nprocs; i++)
+    {
+        f << "pid " << i << " : " << displ[i] << endl;
+    }
+    
+    MPI_Scatterv(vecteurs, sendcounts, displ, MPI_INT, recvecteur, taille_rec, MPI_INT, root, MPI_COMM_WORLD);
+
     // A compléter à partir d'ici.
-    int* vecRes = new int[taille]; // Local pour get les res dedans
-    matrice_vecteur(n, matrice, recvecteur, vecRes); // chaque thread fais le calcule
+    int* vecRes = new int[taille_rec]; // Local pour get les res dedans
+    for (size_t i = 0; i < tab_thread_vecteur[pid]; i++)
+    {
+        matrice_vecteur(n, matrice, recvecteur + (i * n), vecRes + (i * n)); // chaque thread fais le calcule
+
+    }
     int* res = new int[m*n];  
-    MPI_Gatherv(vecRes, taille, MPI_INT, res, sendcounts, displ, MPI_INT , root, MPI_COMM_WORLD);
+    MPI_Gatherv(vecRes, taille_rec, MPI_INT, res, sendcounts, displ, MPI_INT , root, MPI_COMM_WORLD);
     // Dans le temps écoulé on ne s'occupe que de la partie communications et calculs
     // (on oublie la génération des données et l'écriture des résultats sur le fichier de sortie)
     if (pid == root) {

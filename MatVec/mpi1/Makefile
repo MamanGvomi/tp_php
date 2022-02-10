@@ -16,3 +16,6 @@ clean:
 
 mrproper: clean
 	@rm -rf $(EXEC)
+
+run:
+	mpirun -np 3 ./main 2 4 0 test.txt
