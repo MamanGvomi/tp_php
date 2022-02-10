@@ -1,0 +1,10 @@
+Matrice
+0 8 
+2 8 
+
+Les vecteurs
+15 19 
+12 13 
+Les vecteurs résultat sur le root 
+152 182 
+104 128 
