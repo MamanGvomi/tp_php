@@ -14,9 +14,9 @@
 
 // variables globales
 // taille des données (soit le vecteur ou le coté d'une matrice carrée)
-const int taille=2048*2048;
+const int taille=3;
 // taille des données en octets Attention au type des données)
-size_t nboctets=sizeof(float)*taille;
+size_t nboctets=sizeof(float)*taille*taille;
 // pointeurs vers le stockage des données en mémoire centrale
 float *A;
 float *B;
@@ -31,25 +31,28 @@ double temps(std::chrono::time_point<std::chrono::system_clock> debut, std::chro
 
 // initialisation d'un vecteur à une valeur aléatoire entre min et max 
 void init_vec(int *vec,int taille, int min, int max){
-  if (min==max)
-    for (int i=0;i<taille;vec[i++]=min);
-  else{
-    int interval=max-min+1;
-    for (int i=0;i<taille;vec[i++]=min+rand()%interval);
-  }
+  // if (min==max)
+  //   for (int i=0;i<taille;vec[i++]=min);
+  // else{
+  //   int interval=max-min+1;
+  //   for (int i=0;i<taille;vec[i++]=min+rand()%interval);
+  // }
+  for (int i=0;i<taille;vec[i++]=1);
 }
 
 // initialisation d'un vecteur à une valeur aléatoire entre min et max 
 void init_vec(float *vec,int taille, float min, float max){
-  if (min==max)
-    for (int i=0;i<taille;vec[i++]=min);
-  else{
-    int interval=max-min+1;
-    for (int i=0;i<taille;i++){
-      float val = min + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(max-min)));
-      vec[i]=val;
-    }
-  }
+  // if (min==max)
+  //   for (int i=0;i<taille;vec[i++]=min);
+  // else{
+  //   int interval=max-min+1;
+  //   for (int i=0;i<taille;i++){
+  //     float val = min + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(max-min)));
+  //     vec[i]=val;
+  //   }
+  // }
+    for (int i=0;i<taille;vec[i++]=2);
+
 }
 
 void affiche_vec(int * vec, int taille, int nb_col=-1){
@@ -122,7 +125,7 @@ void test_GPU(cl::Program programme, cl::CommandQueue queue, cl::Context context
   queue.enqueueWriteBuffer(bufferA , CL_TRUE, 0, nboctets , A);
   queue.enqueueWriteBuffer(bufferB , CL_TRUE, 0, nboctets , B);
   // creation du kernel (fonction à exécuter)
-  cl::Kernel kernel(programme,"nom_du_kernel");
+  cl::Kernel kernel(programme,"mult_mat");
   // Attribution des paramètres de ce kernel
   kernel.setArg(0,taille);
   kernel.setArg(1,bufferA);
@@ -130,8 +133,8 @@ void test_GPU(cl::Program programme, cl::CommandQueue queue, cl::Context context
   kernel.setArg(3,bufferC);
 
   // création de la topologie des processeurs
-  cl::NDRange global(taille); // nombre total d'éléments de calcul -processing elements
-  cl::NDRange local(256); // dimension des unités de calcul -compute units- c'à-dire le nombre d'éléments de calcul par unités de calcul
+  cl::NDRange global(taille, taille); // nombre total d'éléments de calcul -processing elements
+  cl::NDRange local(2, 2); // dimension des unités de calcul -compute units- c'à-dire le nombre d'éléments de calcul par unités de calcul
 
   // lancement du programme en GPU
   queue.enqueueNDRangeKernel(kernel,cl::NullRange,global,local);
@@ -154,9 +157,9 @@ int main(){
 
 
   // création des zone de stockage de données en mémoire centrale
-  A= new float[taille];
-  B= new float[taille];
-  C=new float[taille];
+  A= new float[taille * taille];
+  B= new float[taille * taille];
+  C= new float[taille * taille];
 
 
 
@@ -179,7 +182,7 @@ int main(){
     cl::Context contexte(devices);
 
     // création du programme dans le contexte (voir code fonction)
-    cl::Program programme=creationProgramme("exemple.cl",contexte);
+    cl::Program programme=creationProgramme("mult_mat.cl",contexte);
     // compilation du programme
    try{
       programme.build(devices);
@@ -192,18 +195,19 @@ int main(){
     }
 
     // création de la file de commandes (ordres de l'hote pour le GPU)
-    cl::CommandQueue queue= cl::CommandQueue(contexte,devices[0]);
+    cl::CommandQueue queue = cl::CommandQueue(contexte,devices[0]);
 
     // initialisation des données sur l'hote
     init_vec(A,taille,-10,10);
     init_vec(B,taille,-10,10);
     // affichage des données initialisées
     // std::cout<<" Données initialisées"<<std::endl;
-    // affiche_vec(A,taille);
-    // affiche_vec(B,taille);
+    affiche_vec(A,taille);
+    affiche_vec(B,taille);
     
     test_CPU();
     test_GPU(programme,queue,contexte);
+    affiche_vec(C, taille);
     
   } catch (cl::Error err) { // Affichage des erreurs en cas de pb OpenCL
     std::cout << "Exception\n";
