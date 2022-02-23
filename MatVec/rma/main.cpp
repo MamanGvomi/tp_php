@@ -24,15 +24,8 @@ int main(int argc, char **argv) {
     int m = atoi(argv[2]); // nombre de vecteurs en entrée
     int root = atoi(argv[3]); // processeur root : référence pour les données
     string name = argv[4]; // le nom du fichier pour que le processus root copie les données initiales et les résultats
+    int x = atoi(argv[5]); // Nb vec par batch
     
-    
-    int * nb_par_t = new int[nprocs];
-    for (size_t i = 0; i < nprocs; i++)
-    {    
-        int reste = m % nprocs;
-        nb_par_t[i] = (pid < reste) ? m / nprocs + 1 : m / nprocs;
-   
-    }
     // Petit test pour vérifier qu'on peut avoir plusieurs threads par processus.
 #pragma omp parallel num_threads(4)
     {
@@ -95,38 +88,21 @@ int main(int argc, char **argv) {
 
     MPI_Win_fence(0, window_matrice);
     MPI_Win_fence(0, window_vecteurs);
+ 
+    int nb_batch =  m / x;
+    int batch_par_thread = nb_batch / nprocs;
+    int reste_batch = nb_batch % nprocs;
+    int* my_number_batch = pid < reste_batch ? batch_par_thread + 1 : batch_par_thread;
 
-    // A compléter également avec la récupération des résulta
-    int* vecteurs_th = new int[n * nb_par_t[pid]];
-    if(pid == root){
-        for (size_t i = 0; i < n * nb_par_t[pid]; i++)
-        {
-            vecteurs_th[i] = vecteurs[i];
-        }
-    } 
-    else{
-        int offset = 0;
-        for (size_t i = 0; i < pid; i++)
-        {
-            offset += nb_par_t[i] * n;
-        }
+    for (size_t i = 0; i < my_number_batch[pid]; i++)
+    {
         
-        MPI_Get(matrice, n*n, MPI_INT, root, 0, n*n,  MPI_INT, window_matrice); // On get la matrice
-        MPI_Get(vecteurs_th, n*nb_par_t[pid], MPI_INT, root, offset, n * nb_par_t[pid],  MPI_INT, window_vecteurs); // On get ses vecteurs
     }
-    MPI_Win_fence( 0 , window_vecteurs);
-    cout << "les vecteurs de pid " << pid << endl;
-        for (size_t i = 0; i < nb_par_t[pid]; i++)
-        {
-            cout << "vecteur : "; 
-            for (size_t j = 0; j < n ; j++)
-            {
-                cout << vecteurs_th[j + i*n] << " ";
-            }
-           cout << endl;
-        }
     
-    matrice_vecteur(n, matrice, vecteurs_th);
+
+
+
+    MPI_Win_fence(0, window_vecteurs);
 
     int* res = new int[n * m];
     if (pid == root) {
