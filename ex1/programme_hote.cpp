@@ -198,12 +198,12 @@ int main(){
     cl::CommandQueue queue = cl::CommandQueue(contexte,devices[0]);
 
     // initialisation des données sur l'hote
-    init_vec(A,taille,-10,10);
-    init_vec(B,taille,-10,10);
+    init_vec(A,taille * taille,-10,10);
+    init_vec(B,taille * taille,-10,10);
     // affichage des données initialisées
     // std::cout<<" Données initialisées"<<std::endl;
-    affiche_vec(A,taille);
-    affiche_vec(B,taille);
+    affiche_vec(A,taille * taille);
+    affiche_vec(B,taille * taille);
     
     test_CPU();
     test_GPU(programme,queue,contexte);
