@@ -1,18 +1,18 @@
-MPICXX = g++
-SRC= programme_hote.cpp
-# SRC= $(wildcard *.cpp)
-OBJ= $(SRC:.cpp=.o)
-EXEC= programme_hote
+CC=g++
+CFLAGS=-W -Wall -ansi -pedantic
+LDFLAGS= -O3 -lOpenCL -o programme_hote
+EXEC=main
 
-%.o: %.cpp
-	$(MPICXX) -O3 -lOpenCL -o $@ -c $< 
+all: $(EXEC)
 
-main: $(OBJ) 
-	$(MPICXX) -o $@ $^
+main: programme_hote.cpp
+	$(CC) programme_hote.cpp $(LDFLAGS)
 
 clean:
-	@rm -rf *.o
+	rm -rf *.o
 
-cleanall: clean
-	@rm -rf $(EXEC)
+run:
+	./programme_hote
 
+mrproper: clean
+	rm -rf $(EXEC)

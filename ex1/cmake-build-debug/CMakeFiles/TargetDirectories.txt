@@ -1,0 +1,3 @@
+/home/emgeve/Documents/M2/php/ex1/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/emgeve/Documents/M2/php/ex1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/emgeve/Documents/M2/php/ex1/cmake-build-debug/CMakeFiles/td1.dir

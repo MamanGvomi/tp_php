@@ -16,11 +16,11 @@
 // taille des données (soit le vecteur ou le coté d'une matrice carrée)
 const int taille=3;
 // taille des données en octets Attention au type des données)
-size_t nboctets=sizeof(float)*taille*taille;
+size_t nboctets=sizeof(int)*taille*taille;
 // pointeurs vers le stockage des données en mémoire centrale
-float *A;
-float *B;
-float *C;
+int *A;
+int *B;
+int *C;
 
 
 // fonction permettant de récupérer le temps écoulé entre debut et fin
@@ -31,28 +31,25 @@ double temps(std::chrono::time_point<std::chrono::system_clock> debut, std::chro
 
 // initialisation d'un vecteur à une valeur aléatoire entre min et max 
 void init_vec(int *vec,int taille, int min, int max){
-  // if (min==max)
-  //   for (int i=0;i<taille;vec[i++]=min);
-  // else{
-  //   int interval=max-min+1;
-  //   for (int i=0;i<taille;vec[i++]=min+rand()%interval);
-  // }
-  for (int i=0;i<taille;vec[i++]=1);
+  if (min==max)
+    for (int i=0;i<taille;vec[i++]=min);
+  else{
+    int interval=max-min+1;
+    for (int i=0;i<taille;vec[i++]=min+rand()%interval);
+  }
 }
 
 // initialisation d'un vecteur à une valeur aléatoire entre min et max 
 void init_vec(float *vec,int taille, float min, float max){
-  // if (min==max)
-  //   for (int i=0;i<taille;vec[i++]=min);
-  // else{
-  //   int interval=max-min+1;
-  //   for (int i=0;i<taille;i++){
-  //     float val = min + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(max-min)));
-  //     vec[i]=val;
-  //   }
-  // }
-    for (int i=0;i<taille;vec[i++]=2);
-
+  if (min==max)
+    for (int i=0;i<taille;vec[i++]=min);
+  else{
+    int interval=max-min+1;
+    for (int i=0;i<taille;i++){
+      float val = min + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(max-min)));
+      vec[i]=val;
+    }
+  }
 }
 
 void affiche_vec(int * vec, int taille, int nb_col=-1){
@@ -107,12 +104,32 @@ cl::Program creationProgramme(std::string nomFicSource, cl::Context contexte){
 
 void test_CPU(){
   std::chrono::time_point<std::chrono::system_clock> debut=std::chrono::system_clock::now();
-  for (int i=0;i<taille;i++)
-    C[i]=A[i]+B[i];
+  //Par element
+  std::cout << "Par elements" << std::endl;
+    for (int i = 0; i < taille; ++i) {
+        for (int j = 0; j < taille; ++j) {
+            int cellule = i * taille + j;
+            C[cellule] = 0;
+            for (int k = 0; k < taille; ++k) {
+                C[cellule] += A[i*taille+k] * B[k*taille + j];
+            }
+        }
+    }
+
+  //Par ligne
+//  for(int i = 0; i < taille; i ++){
+//    int deb_ligne = i * taille;
+//    for (size_t j = 0; j < taille; j++)
+//    {
+//      for (size_t k = 0; k < taille; k++)
+//      {
+//        C[deb_ligne + j] += A[deb_ligne + k] * B[j + k * taille];
+//      }
+//    }
+//  }
+
   std::chrono::time_point<std::chrono::system_clock> fin=std::chrono::system_clock::now();
   std::cout<<"temps execution "<<temps(debut,fin)<<std::endl;
-  //std::cout<<"Résultat CPU"<<std::endl;
-  //affiche_vec(C,taille);
 }
 void test_GPU(cl::Program programme, cl::CommandQueue queue, cl::Context contexte){
   std::chrono::time_point<std::chrono::system_clock> debut=std::chrono::system_clock::now();
@@ -133,8 +150,11 @@ void test_GPU(cl::Program programme, cl::CommandQueue queue, cl::Context context
   kernel.setArg(3,bufferC);
 
   // création de la topologie des processeurs
+  // cl::NDRange global(taille, taille); // nombre total d'éléments de calcul -processing elements
+  // cl::NDRange local(2, 2); // dimension des unités de calcul -compute units- c'à-dire le nombre d'éléments de calcul par unités de calcul
+  //Par lignes
   cl::NDRange global(taille, taille); // nombre total d'éléments de calcul -processing elements
-  cl::NDRange local(2, 2); // dimension des unités de calcul -compute units- c'à-dire le nombre d'éléments de calcul par unités de calcul
+  cl::NDRange local(3, 3); // dimension des unités de calcul -compute units- c'à-dire le nombre d'éléments de calcul par unités de calcul
 
   // lancement du programme en GPU
   queue.enqueueNDRangeKernel(kernel,cl::NullRange,global,local);
@@ -148,8 +168,11 @@ void test_GPU(cl::Program programme, cl::CommandQueue queue, cl::Context context
   //affiche_vec(C,taille);
 }
 
-
-int main(){
+int main(int argc, char** argv){
+    bool print = false;
+    if(atoi(argv[1]) == 1){
+        print=true;
+    }
   // pour mesurer le temps
   std::chrono::time_point<std::chrono::system_clock> debut,debut2,fin;
   // initialisation de générateur aléatoire
@@ -157,9 +180,9 @@ int main(){
 
 
   // création des zone de stockage de données en mémoire centrale
-  A= new float[taille * taille];
-  B= new float[taille * taille];
-  C= new float[taille * taille];
+  A= new int[taille * taille];
+  B= new int[taille * taille];
+  C= new int[taille * taille];
 
 
 
@@ -182,6 +205,7 @@ int main(){
     cl::Context contexte(devices);
 
     // création du programme dans le contexte (voir code fonction)
+    // cl::Program programme=creationProgramme("mult_mat.cl",contexte);
     cl::Program programme=creationProgramme("mult_mat.cl",contexte);
     // compilation du programme
    try{
@@ -201,14 +225,27 @@ int main(){
     init_vec(A,taille * taille,-10,10);
     init_vec(B,taille * taille,-10,10);
     // affichage des données initialisées
-    // std::cout<<" Données initialisées"<<std::endl;
-    affiche_vec(A,taille * taille);
-    affiche_vec(B,taille * taille);
-    
-    test_CPU();
+    if(print){
+         std::cout<<" Données initialisées"<<std::endl;
+         affiche_vec(A,taille * taille, taille);
+         affiche_vec(B,taille * taille, taille);
+
+    }
+      test_CPU();
+    if(print){
+        std::cout<<" Résultat CPU "<<std::endl;
+         affiche_vec(C, taille * taille, taille);
+
+
+        std::cout<<" Résultat GPU"<<std::endl;
+
+    }
     test_GPU(programme,queue,contexte);
-    affiche_vec(C, taille);
-    
+    if(print){
+
+         affiche_vec(C, taille * taille, taille);
+    }
+
   } catch (cl::Error err) { // Affichage des erreurs en cas de pb OpenCL
     std::cout << "Exception\n";
     std::cerr << "ERROR: " << err.what() << "(" << err.err() << ")" << std::endl;
