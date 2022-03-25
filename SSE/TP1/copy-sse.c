@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-void print_tab(float * tab, int size){
+
+void print_tabf(float * tab, int size){
 	printf("Mon tableau : \n");
 	for (size_t i = 0; i < size; i++)
 	{
@@ -14,6 +15,16 @@ void print_tab(float * tab, int size){
 	}
 	
 }
+
+void print_tabd(double * tab, int size){
+	printf("Mon tableau : \n");
+	for (size_t i = 0; i < size; i++)
+	{
+		printf("[0] : %f\n", tab[i]);
+	}
+	
+}
+
 
 int maxvalue(int random_size)
 {
@@ -98,21 +109,6 @@ int copy(int random_size)
 	}
 
 	return array1[0];
-
-	// printf("Print de l'array1 après copie \n");
-	// for(int i = 0 ; i < random_size ; ++i){
-	//   printf("%f ", array1[i]);
-	// }
-	// printf("\n");
-
-	// __m128 r1 = _mm_max_ps(r0, r0);
-	// float max_value[4] __attribute__((aligned(16)));
-	// _mm_store_ps( max_value, r1 );
-	// printf("Print de l'array max_value\n");
-	// for(int i = 0 ; i < random_size ; ++i){
-	//   printf("%f ", max_value[i]);
-	// }
-	// printf("\n");
 }
 
 float reduce_from_tab(int random_size)
@@ -169,10 +165,35 @@ double produit_scalaire(int random_size)
 		array1[i] = (double)(rand() % 20);
 	}
 
-	int block_count = random_size / 4;
-	int reste = random_size % 4;
+	int block_count = random_size / 2;
+	int reste = random_size % 2;
 
-	double res; 
+
+	__m128d r0, r1, r_res;
+	r_res = _mm_set1_pd(0.0);
+
+	for (size_t i = 0; i < block_count; i++)
+	{
+		r0 = _mm_load_pd(array0 + i * 2);
+		r1 = _mm_load_pd(array1 + i * 2);
+		r_res = _mm_add_pd(r_res, _mm_mul_pd(r0, r1));
+	}
+
+	double res = 0.0;
+	for (size_t i = 0; i < reste; i++)
+	{
+		res += array0[block_count*2+i] * array1[block_count*2+i];
+	}
+	
+	double total[2] __attribute__((aligned(16)));
+	_mm_store_pd(total, r_res);
+
+	for (size_t i = 0; i < 4; i++)
+	{
+		res += total[i];
+	}
+	print_tabd(array0, random_size);
+	print_tabd(array1, random_size);
 
 	return res;
 }
@@ -182,6 +203,7 @@ int main(void)
 {
 	// copy(1000000000);
 	// maxvalue(10);
-	printf("\nMAX : %f", reduce_from_tab(6));
+	// printf("\nMAX : %f", reduce_from_tab(6));
+	printf("\nProduict scalaire : %f\n", produit_scalaire(2));
 	return 0;
 }
