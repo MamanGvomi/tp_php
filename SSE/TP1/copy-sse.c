@@ -106,9 +106,55 @@ int copy(int random_size)
 	// printf("\n");
 }
 
+float reduce_from_tab(int random_size)
+{
+	srand(time(NULL));
+	float *array0 = _mm_malloc(random_size * sizeof(float), 16);
+
+	for (size_t i = 0; i < random_size; i++)
+	{
+		float value = (float)(rand() % 20);
+		printf("elem %ld : %f \n", i, value);
+		array0[i] = value;
+	}
+	
+	int block_count = random_size / 4;
+	int reste = random_size % 4;
+
+	__m128 r0;
+	__m128 r_total = _mm_set1_ps(0);
+
+
+
+	for (size_t i = 0; i < block_count; i++)
+	{
+		r0 = _mm_load_ps(array0 + i * 4);
+		r_total = _mm_add_ps(r0, r_total);
+	}
+	
+	float res = 0.0f;
+	for (size_t i = 0; i < reste; i++)
+	{
+		res += array0[block_count*4+i];	
+	}
+
+
+	float total[4] __attribute__((aligned(16)));
+	_mm_store_ps(total, r_total);
+
+	for (size_t i = 0; i < 4; i++)
+	{
+		res += total[i];
+	}
+
+	return res;
+}
+
+
 int main(void)
 {
 	// copy(1000000000);
-	maxvalue(10);
+	// maxvalue(10);
+	printf("\nMAX : %f", reduce_from_tab(6));
 	return 0;
 }
