@@ -6,6 +6,15 @@
 #include <stdlib.h>
 #include <time.h>
 
+void print_tab(float * tab, int size){
+	printf("Mon tableau : \n");
+	for (size_t i = 0; i < size; i++)
+	{
+		printf("[0] : %f\n", tab[i]);
+	}
+	
+}
+
 int maxvalue(int random_size)
 {
 
@@ -146,6 +155,24 @@ float reduce_from_tab(int random_size)
 	{
 		res += total[i];
 	}
+
+	return res;
+}
+
+double produit_scalaire(int random_size)
+{
+	double *array0 = _mm_malloc(random_size * sizeof(double), 16);
+	double *array1 = _mm_malloc(random_size * sizeof(double), 16);
+	for (size_t i = 0; i < random_size; i++)
+	{
+		array0[i] = (double)(rand() % 20);
+		array1[i] = (double)(rand() % 20);
+	}
+
+	int block_count = random_size / 4;
+	int reste = random_size % 4;
+
+	double res; 
 
 	return res;
 }

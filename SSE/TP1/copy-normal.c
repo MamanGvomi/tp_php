@@ -7,7 +7,7 @@
 #include <time.h>
 
 
-void print_tab(float * tab, int size){
+void print_tabf(float * tab, int size){
 	printf("Mon tableau : \n");
 	for (size_t i = 0; i < size; i++)
 	{
@@ -15,6 +15,16 @@ void print_tab(float * tab, int size){
 	}
 	
 }
+
+void print_tabd(double * tab, int size){
+	printf("Mon tableau : \n");
+	for (size_t i = 0; i < size; i++)
+	{
+		printf("[0] : %f\n", tab[i]);
+	}
+	
+}
+
 
 int copy(int random_size)
 {
@@ -80,26 +90,26 @@ float reduce_from_tab(int random_size)
 	return value;
 }
 
-float produit_scalaire(int random_size)
+double produit_scalaire(int random_size)
 {
 	// init du tableau
 	srand(time(NULL));
-	float *tab = malloc(random_size * sizeof(float));
-	float *tab2 = malloc(random_size * sizeof(float));
+	double *tab = malloc(random_size * sizeof(double));
+	double *tab2 = malloc(random_size * sizeof(double));
 	for (size_t i = 0; i < random_size; i++)
 	{
-		tab[i] = (float)(rand() % 50);
-		tab2[i] = (float)(rand() % 50);
+		tab[i] = (double)(rand() % 50);
+		tab2[i] = (double)(rand() % 50);
 	}
 
-	float res = 0.0f;
+	double res = 0.;
 
 	for (size_t i = 0; i < random_size; i++)
 	{
 		res += tab[i] * tab2[i];
 	}
-	print_tab(tab, random_size);
-	print_tab(tab2, random_size);
+	print_tabd(tab, random_size);
+	print_tabd(tab2, random_size);
 	return res;
 }
 
